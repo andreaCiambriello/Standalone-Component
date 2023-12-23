@@ -1,0 +1,80 @@
+Sommario
+
+Questo progetto è stato costruito tramite l'utilizzo degli standalone component, una 'feature' introdotta con Angular 14.
+Questo approccio esclude l'utilizzo dei module nel progetto, dichiarando componenti, direttive e pipe, come standalone component.
+Ciò permette di avere una visione locale dei componenti utilizzati, ovvero in ogni componente viene dichiarato cosa vogliamo importare 
+e utilizzare, contrariamente a come avviene con i module, in cui vengono dichiarati tutti gli import ecc...
+Un approccio non esclude l'altro, possono anche coesistere, ma ciò non avrebbe senso. Entrambi gli approcci hanno dei pro e contro.
+L'utilizzo dei module ci permette di ripetere meno codice e di gestire tutto su un unico file. Tuttavia, questo può rendere 
+più difficile la ricerca dei vari import e delle dichiarazioni dei componenti, soprattutto per progetti grandi.
+L'utilizzo degli standalone component va a risolvere questo problema, dichiarando nel componente stesso i sui import. Tuttavia, 
+questo significa dover scrivere più codice e ripetere spesso lo stesso codice (per adesso).
+La scelta sta nel nostro caso d'uso specifico e anche in previsione di eventuali aggiornamenti di Angular. Infatti, al momento gli 
+standalone component vanno dichiarati tramite la chiave 'standalone: true', in quanto di default, approccio module, ogni componente è 
+implicitamente 'standalone: false', ma in futuro, potrebbe diventare default il valore true e quindi l'approccio standalone, 
+evitando quindi di riscrivere sempre lo stesso codice, ma solo gli import dei componenti. Questo si tradurrebbe in meno codice da 
+scrivere e dichiarazioni più facili da trovare avvicinando sotto questo aspetto Angular a React.
+
+Per quanto riguarda l'uso dei service non c'è molta differenza tra i due approcci. Infatti possiamo anche in questo caso usare la 
+classica dichiarazione globale, modalità consigliata, tramite il decorator @Injectable({ providedIn: 'root' }); possiamo utilizzare 
+la chiave providers nei componenti e dichiarare il service localmente; possiamo dichiarare globalmente il service nel file main.ts, 
+passando alla funzione bootstrapApplication() un secondo parametro contenente un oggetto con la chiave providers: 
+bootstrapApplication(AppComponent, {
+  providers: []
+})
+In questo progetto useremo la modalità globale classica.
+
+Per quanto riguarda il routing, abbiamo bisogno di routing module, tuttavia, essendo che app.component è standalone, non abbiamo 
+bisogno di un module. L'import del routing viene fatto negli import del componente stesso e l'app va poi 'avvisata' di questo 
+nel file main.ts passando alla funzione bootstrapApplication() un secondo parametro contenente un oggetto con la chiave providers 
+e un array come valore che al suo interno ha la funzione importProvidersFrom() e a questa passare il routing module:
+bootstrapApplication(AppComponent, {
+  providers: [
+    importProvidersFrom(AppRoutingModule)
+  ]
+});
+
+Per quanto rigurda il lazy loading dei componenti, possiamo sia seguire lo stesso procedimento che si segue per i componenti dichiarati 
+con l'approccio module, ovvero esportare un file di routing in quello generale e fare il lazy loading con loadChildren():
+{
+  path: 'dashboard',
+  loadChildren: () => 
+    import('./dashboard/dashboard-routing.module').then(
+      (mod) => mod.DashboardRoutingModule
+    ),
+}
+Tuttavia con i componenti standalone è stata introdotta una nuova feature, non disponibile per l'approccio con i module, ovvero la 
+possibilità di caricare in lazy loading i singoli componenti con la chiave loadComponent():
+{
+  path: 'about',
+  loadComponent: () => 
+    import('./about/about.component').then((mod) => mod.AboutComponent)
+}
+Quindi con gli standalone component è possibile caricare in lazy loading un singolo componente senza doverlo per forza wrappare in un 
+routing module, come invece si faceva con l'approccio module, in cui si creava un file di routing, lo si importava e caricava in lazy 
+loading anche se magari conteneva un solo componente.
+Oltre alla possibilità di caricare un solo componente in lazy loading è possibile anche caricare più componenti insieme come avveniva per 
+l'approccio module, senza però dover definire un module e un routing module. Infatti basta creare un file che contiene i routes (routes.ts) 
+importarlo nel routing module principale e caricarlo in lazy loading:
+{
+  path: 'dashboard',
+  loadChildren: () => 
+    import('./dashboard/routes').then(
+      (mod) => mod.DASHBOARD_ROUTES
+    ),
+}
+Ovviamente i file che contengono direttive di routing, nel nostro caso DashboardComponent, devono importare RouterModule, in quanto 
+standalone.
+
+File da consultare:
+1) main.ts
+
+Sostituisce app.module, in quanto indica ad Angular come far partire l'app e il routing.
+
+2) app.component.ts - highlight.directive.ts - details.component.ts - welcome.component.ts - ecc...
+
+Tutti componenti standalone, hanno la chiave 'standalone: true' e gli import dichiarati nel decorator Component o Directive.
+
+3) routes.ts
+
+Sostituisce un routing module 'secondario', descrivendo solo i routes. Per secondario intendo non root.
